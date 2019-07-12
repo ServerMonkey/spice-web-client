@@ -189,7 +189,7 @@ function start () {
 		} else if (action == 'timeLapseDetected') {
 			wdi.Debug.log('Detected time lapse of ', params, 'seconds');
 		} else if (action == 'error') {
-			closeSession();
+			//closeSession();
 		} else if ("checkResults") {
 			var cnv = $('#canvas_0')[0];
 			var ctx = cnv.getContext('2d');
@@ -243,9 +243,7 @@ function start () {
 		jQuery.getScript("performanceTests/tests/wordscroll.js");
 	}
 
-	var data = read_cookie("token")
-	console.log(data);
-	data = JSON.parse(data) || {};
+	var data = {};
 
 	// Client Id only makes sense when called from flexVDI client
 	var hwaddress = read_cookie("hwaddress");
@@ -258,10 +256,12 @@ function start () {
 	app.run({
 		'callback': f,
 		'context': this,
-		'host': data['spice_address'] || '',
-		'port': data['spice_port'] || 0,
-		'protocol': getURLParameter('protocol') || 'ws',
-		'token': data['spice_password'] || '',
+		'host': 'rubeus.rangeforce.com',
+		'port': 443,
+		'protocol': 'wss',
+		// This random string is not cryptographically secure, but it is still
+		// an improvement over the previous fixed, publicly known value.
+		'token': Math.random().toString().substr(2, 8),
 		'vmHost': getURLParameter('vmhost') || false,
 		'vmPort': getURLParameter('vmport') || false,
 		'useBus': false,
@@ -275,19 +275,39 @@ function start () {
         'heartbeatToken': 'heartbeat',
 		'heartbeatTimeout': 4000,//miliseconds
 		'busFileServerBaseUrl': 'https://10.11.12.200/fileserver/',
-		'layout': data['layout'] || 'es',
+		'layout': 'us',
 		'useWorkers': useWorkers,
 		'seamlessDesktopIntegration': false,
 		'externalClipboardHandling': false,
-		'disableClipboard': true,
+		'disableClipboard': false,
 		'layer': document.getElementById('screen'),
 		'vmInfoToken': getURLParameter('vmInfoToken'),
 		'canvasMargin': {
 			'x': 0,
-			'y': 40
+			'y': 0
 		},
 		//'language': navigator.language
 	});
+
+	window.addEventListener("message", receiveMessage, false);
+
+	function receiveMessage(event) {
+		if (!/\.rangeforce\.com$/.test(event.origin)) {
+			console.log('Invalid postMessage origin detected!');
+			return;
+		}
+
+		if (!event.data || !event.data.type) {
+			console.log('No postMessage type specified!');
+			return;
+		}
+
+		switch (event.data.type) {
+			case 'keys':
+				app.sendKeyList(event.data.keys);
+				break;
+		}
+	}
 }
 
 function startBenchmark () {

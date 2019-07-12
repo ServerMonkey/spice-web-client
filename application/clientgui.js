@@ -663,11 +663,13 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 	},
 
 	setClipBoardData: function(data) {
-		//we have received new clipboard data
-		//show to the user
-		//TODO: create a new dialog with buttons to copy the data directly
-		//from the textbox
-		prompt("New clipboard data available, press ctrl+c to copy it", data);
+		console.log("New clipboard data available:", data);
+		navigator.clipboard.writeText(data).then(function() {
+			console.log("Clipboard write succeeded!");
+		}, function() {
+			console.log("Clipboard write failed!");
+		});
+		
 	},
 
 	initSound: function() {
