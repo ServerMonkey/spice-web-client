@@ -71,6 +71,8 @@ function start () {
 
 	translate();
 
+	window.startTime = new Date();
+
 	$('#getStats').click(function() {
 		if (!testSessionStarted) {
 			testSessionStarted = true;
@@ -145,9 +147,10 @@ function start () {
 			}
 
 			login = document.getElementById("login");
+			/*
 			if (login != null && login.className == "") {
 				height -= 40;
-			}
+			}*/
 
 			app.sendCommand('setResolution', {
 				'width': width,
@@ -223,11 +226,11 @@ function start () {
 		height = $(window).height();
 
 		login = document.getElementById("login");
-		if (login != null) {
+		/*if (login != null) {
 			if (login.className == "") {
 				height -= 40;
 			}
-		}
+		}*/
 		app.sendCommand('setResolution', {
 			'width': width,
 			'height': height
@@ -292,10 +295,10 @@ function start () {
 	window.addEventListener("message", receiveMessage, false);
 
 	function receiveMessage(event) {
-		if (!/\.rangeforce\.com$/.test(event.origin)) {
+		/*if (!/^https:\/\/\w+\.rangeforce\.com$/.test(event.origin)) {
 			console.log('Invalid postMessage origin detected!');
 			return;
-		}
+		}*/
 
 		if (!event.data || !event.data.type) {
 			console.log('No postMessage type specified!');
@@ -306,8 +309,19 @@ function start () {
 			case 'keys':
 				app.sendKeyList(event.data.keys);
 				break;
+			case 'clipboard':
+				console.log(event.data.clipboard)
+				app.agent.clipboardContent = event.data.clipboard;
+				app.agent.sendGrab();
+				app.agent.sendPaste();
+				break;
 		}
 	}
+}
+
+function restart() {
+	location.hash = '#refreshed';
+	location.reload();
 }
 
 function startBenchmark () {

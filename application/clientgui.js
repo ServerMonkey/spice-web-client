@@ -599,6 +599,10 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 	},
 
 	showError: function(message) {
+		if (location.hash != '#refreshed' && new Date() - window.startTime < 3000) {
+			// Don't ask for confirmation if session crashed within 10 seconds and no autorestarts have been made
+			window.restart();
+		}
 		wdi.Debug.warn(message);
 		document.getElementById("overlay").style.visibility = "visible";
 		document.getElementById("error").style.visibility = "visible";
@@ -651,7 +655,7 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 	},
 
 	handleKey: function(e) {
-		console.log("Type: " + e.type + " keyCode: " + e.keyCode + " charCode: " + e.charCode);
+		//console.log("Type: " + e.type + " keyCode: " + e.keyCode + " charCode: " + e.charCode);
 		document.getElementById("inputmanager").focus();
 		e.data[0].generateEvent.call(e.data[0], e.type, [e]);
 
@@ -663,13 +667,7 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 	},
 
 	setClipBoardData: function(data) {
-		console.log("New clipboard data available:", data);
-		navigator.clipboard.writeText(data).then(function() {
-			console.log("Clipboard write succeeded!");
-		}, function() {
-			console.log("Clipboard write failed!");
-		});
-		
+		window.parent.postMessage({type: 'clipboard', clipboard: data}, '*')
 	},
 
 	initSound: function() {

@@ -144,6 +144,8 @@ wdi.Agent = $.spcExtend(wdi.EventObject.prototype, {
             this.serverTokens = 10;
         }
 
+        console.log('New Packet >>', packet.type);
+
         if(packet.type == wdi.AgentMessageTypes.VD_AGENT_ANNOUNCE_CAPABILITIES) {
             //??
         } else if(packet.type == wdi.AgentMessageTypes.VD_AGENT_CLIPBOARD_GRAB) {
@@ -187,7 +189,7 @@ wdi.Agent = $.spcExtend(wdi.EventObject.prototype, {
             this.sendGrab();
             this.sendPaste();
         }
-        this.app.sendShortcut(wdi.keyShortcutsHandled.CTRLV);
+        //this.app.sendShortcut(wdi.keyShortcutsHandled.CTRLV);
     },
 
     sendGrab: function() {

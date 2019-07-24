@@ -190,6 +190,7 @@ Application = $.spcExtend(wdi.DomainObject, {
     onDisconnect: function (params) {
 		var error = params;
         this.executeExternalCallback('error', error);
+        this.clientGui.showError();
     },
 
     onResolution: function (params) {
