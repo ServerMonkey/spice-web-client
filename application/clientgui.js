@@ -634,9 +634,9 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 		this.mouse_mode = mode;
 		if (mode == wdi.SpiceMouseModeTypes.SPICE_MOUSE_MODE_SERVER) {
 			this.triedCapturingPointer = false;
-			$.nok({
-				message: tr['msg_click_to_capture']
-				});
+//			$.nok({
+//				message: tr['msg_click_to_capture']
+//				});
 		}
 		this.updateMousePointer();
 	},
