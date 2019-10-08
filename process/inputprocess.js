@@ -148,6 +148,10 @@ wdi.InputProcess = $.spcExtend(wdi.EventObject.prototype, {
 			}
 			for (i= 0; i<scanCodes.length;i++) {
 				console.log("INPUTS_KEY_UP: " + scanCodes[i]);
+
+				// Dirty hack to release Ctrl key correctly on window blur
+				if (scanCodes.length == 1 && scanCodes[0][0] == 224 && scanCodes[0][1] == 157 && !this.pendingCtrlKey) scanCodes[0] = [157, 0, 0, 0];
+
 				this.pendingAltKey = false;
 				this.pendingCtrlKey = false;
 				packet = new wdi.SpiceMessage({
