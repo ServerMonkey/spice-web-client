@@ -74,7 +74,7 @@ wdi.InputManager = $.spcExtend(wdi.EventObject.prototype, {
 			if (self.checkFocus) {
 				self.input.focus();
 			}
-			self.stuckKeysHandler.releaseSpecialKeysPressed();
+			self.stuckKeysHandler.releaseAllPressedKeys();
 		});
 	},
 

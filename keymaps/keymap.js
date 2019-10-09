@@ -216,6 +216,8 @@ wdi.Keymap = {
             additionalKeymap = { };
             additionalKeymap[76] = 0x26;
             return this.getScanCodeFromKeyCode(e['keyCode'], type, this.keymap, additionalKeymap);
+        } else if (this.handledByGeneratedKeyCode(type, e['keyCode'], e['generated'])) {
+            return this.getScanCodesFromCharCode(e['keyCode']);
         } else {
             return [];
         }
@@ -298,6 +300,11 @@ wdi.Keymap = {
             }
         }
         return false;
+    },
+
+    handledByGeneratedKeyCode: function(type, keyCode, generated) {
+        console.log('handledByGeneratedKeyCode',String.fromCharCode(keyCode))
+        return (generated === true && type === 'keyup' && this.charmap[String.fromCharCode(keyCode)]);
     },
 
     handledByCharmap: function(type) {

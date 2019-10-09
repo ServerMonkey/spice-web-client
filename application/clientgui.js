@@ -616,7 +616,6 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 			}
 		} else {
 			if (event.indexOf('key') > -1) { // it's a keyEvent
-				this.stuckKeysHandler.checkSpecialKey(event, params[0]['keyCode']);
 				var val = this.inputManager.getValue();
 				if (val) {
 					params = this.inputManager.manageChar(val, params);
@@ -663,6 +662,7 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 		    (wdi.Keymap.isInKeymap(e.keyCode) && e.type !== "keypress")) {
 			e.preventDefault();
 		}
+		e.data[0].stuckKeysHandler.handleStuckKeys(e)
 		//e.data[0].stuckKeysHandler.handleStuckKeys(e);
 	},
 
