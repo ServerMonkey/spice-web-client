@@ -44,7 +44,7 @@ wdi.InputManager = $.spcExtend(wdi.EventObject.prototype, {
 		this.stuckKeysHandler = c.stuckKeysHandler;
 		this.$ = c.jQuery || $;
 		if (!c.disableInput) {
-			this.inputElement = this.$('<div style="position:absolute"><input type="text" id="inputmanager" style="opacity:0;color:transparent"/></div>');
+			this.inputElement = this.$('<div style="position:absolute"><input type="text" id="inputmanager" autocomplete="off" style="opacity:0;color:transparent"/></div>');
 		}
 		this.currentWindow = null;
 	},
