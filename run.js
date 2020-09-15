@@ -259,7 +259,7 @@ function start () {
 	app.run({
 		'callback': f,
 		'context': this,
-		'host': 'CHANGEME.rangeforce.com',
+		'host': 'CHANGEME',
 		'port': 443,
 		'protocol': 'wss',
 		// This random string is not cryptographically secure, but it is still
