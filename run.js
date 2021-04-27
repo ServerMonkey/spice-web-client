@@ -259,7 +259,7 @@ function start () {
 	app.run({
 		'callback': f,
 		'context': this,
-		'host': 'CHANGEME',
+		'host': document.location.hostname,
 		'port': 443,
 		'protocol': 'wss',
 		// This random string is not cryptographically secure, but it is still
