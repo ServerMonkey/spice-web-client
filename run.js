@@ -262,9 +262,7 @@ function start () {
 		'host': document.location.hostname,
 		'port': 443,
 		'protocol': 'wss',
-		// This random string is not cryptographically secure, but it is still
-		// an improvement over the previous fixed, publicly known value.
-		'token': Math.random().toString().substr(2, 8),
+		'token': window.crypto.getRandomValues(new Uint32Array(4)).join(''),
 		'vmHost': getURLParameter('vmhost') || false,
 		'vmPort': getURLParameter('vmport') || false,
 		'useBus': false,
