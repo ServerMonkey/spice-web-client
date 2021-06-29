@@ -256,6 +256,13 @@ function start () {
 
 	$("title").text((data['title'] || 'flexVDI Client') + ' - powered by eyeOS');
 
+	inactivityTimeout = data['inactivity_timeout'] || 0
+	if (inactivityTimeout > 0) {
+		if (inactivityTimeout < inactivityGrace + 10)
+			inactivityTimeout = 10
+		else inactivityTimeout -= inactivityGrace
+	}
+
 	app.run({
 		'callback': f,
 		'context': this,
