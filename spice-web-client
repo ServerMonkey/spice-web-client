@@ -1,0 +1,218 @@
+#!/bin/sh
+#info: This program will install the HTML5 Spice Web Client into
+# a specific web server directory.
+# shellcheck disable=SC2039
+
+# abort on any error
+set -e
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    man spice-web-client.1 || ronn -r <README_2.md | man -l -
+    exit 0
+fi
+
+# must run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo 'This script must be run as root!' >&2
+    exit 1
+fi
+
+### GLOBAL VARIABLES ##########################################################
+
+WEB_ROOT="/var/www/html"
+SPICE_SRC="/usr/share/spice-web-client/web-client"
+ARG_DEBUG="false"
+ARG_UNINSTALL="false"
+ARG_FORCE="false"
+SSL_CERT="/etc/ssl/certs/spice-web-client.crt"
+SSL_KEY="/etc/ssl/private/spice-web-client.key"
+LOG_FILE="/var/log/spice-websockify-install.log"
+
+### FUNCTIONS #################################################################
+
+error() {
+    echo "ERROR: $1" >&2
+    exit 1
+}
+
+debug() {
+    if [ "$ARG_DEBUG" = "true" ]; then
+        echo "$1"
+    fi
+}
+
+get_xml() {
+    local XML_DATA="$1"
+    local XML_PATH="$2"
+    local XML_VALUE
+    XML_VALUE=$(echo "$XML_DATA" | xmlstarlet sel -t -v "$XML_PATH") || true
+    if [ -n "$XML_VALUE" ]; then
+        echo "$XML_VALUE"
+    fi
+}
+
+replace() {
+    [ -f "$1" ] || error "File $1 not found"
+    sed -i "s|$2|$3|g" "$1" || error "Failed to replace $2 with $3 in $1"
+}
+
+kill_processes() {
+    local PROCESS_ARGS
+    local PROCESSES
+    local PID
+
+    PROCESS_ARGS="$1"
+    # shellcheck disable=SC2009
+    PROCESSES=$(ps aux | grep -i -- "$PROCESS_ARGS" | grep -v grep |
+        awk '{print $2}')
+
+    for PID in $PROCESSES; do
+        debug "Killing process: $PID"
+        kill -9 "$PID"
+        wait
+    done
+}
+
+install_client() {
+    local INFO="$1"
+    local WEB_PATH="$2"
+    local VM_PORT="$3"
+    local VM_NAME="$4"
+    local PROTOCOL="$5"
+
+    local RUN_CFG
+    local TO_LINK
+    local VM_PORT_WSS
+
+    RUN_CFG="$WEB_PATH/run.js"
+
+    # force reinstall
+    if [ -d "$WEB_PATH" ] && [ "$ARG_FORCE" != "true" ]; then
+        echo "$INFO already installed to $WEB_PATH"
+    # normal install
+    else
+        echo "$INFO installing spice-web-client to $WEB_PATH"
+        rm -rf "$WEB_PATH"
+        mkdir -p "$WEB_PATH" || error "Failed to create $WEB_PATH"
+        chown -R www-data:www-data "$WEB_PATH" ||
+            error "Failed to set permissions on $WEB_PATH"
+        TO_LINK=$(find "$SPICE_SRC" -maxdepth 1 -not -name '.*' \
+            -printf '%P\n') || error "Failed to list files"
+        for j in $TO_LINK; do
+            ln -s "$SPICE_SRC/$j" "$WEB_PATH/$j" ||
+                error "Failed to link $j"
+        done
+        rm "$RUN_CFG" || error "Failed to remove $RUN_CFG"
+        cp "$SPICE_SRC/run.js" "$RUN_CFG" ||
+            error "Failed to copy run.js"
+        # shellcheck disable=SC2027
+        replace "$RUN_CFG" \
+            "\$(\"title\").text((" \
+            "\$(\"title\").text((\"$VM_NAME.\" + "
+
+        if [ "$PROTOCOL" = "ws" ]; then
+            replace "$RUN_CFG" "'port': 7200," "'port': $VM_PORT,"
+        elif [ "$PROTOCOL" = "wss" ]; then
+            VM_PORT_WSS=$((VM_PORT + 1000))
+            echo "$INFO enabling WSS on port $VM_PORT_WSS"
+            replace "$RUN_CFG" "'port': 7200," "'port': $VM_PORT_WSS,"
+            replace "$RUN_CFG" "'protocol': 'ws'," "'protocol': 'wss',"
+            kill_processes "--key=$SSL_KEY $VM_PORT_WSS :$VM_PORT"
+            websockify --daemon --cert="$SSL_CERT" --key="$SSL_KEY" \
+                "$VM_PORT_WSS" :"$VM_PORT" 1>>"$LOG_FILE" 2>&1 ||
+                error "Failed to start websockify, see $LOG_FILE"
+        else
+            error "Unknown protocol: $PROTOCOL"
+        fi
+
+    fi
+
+}
+
+### PARAMETERS ################################################################
+
+# parse args
+ARGS="$1"
+if echo "$ARGS" | grep -q 'i'; then
+    WEB_ROOT="$2"
+    [ -n "$WEB_ROOT" ] || error "Missing web root directory"
+fi
+if echo "$ARGS" | grep -q 'd'; then
+    ARG_DEBUG="true"
+fi
+if echo "$ARGS" | grep -q 'u'; then
+    [ -n "$2" ] && WEB_ROOT="$2"
+    ARG_UNINSTALL="true"
+fi
+if echo "$ARGS" | grep -q 'f'; then
+    ARG_FORCE="true"
+fi
+
+debug "WEB_ROOT is $WEB_ROOT"
+[ -d "$WEB_ROOT" ] || error "Web root directory does not exist in $WEB_ROOT"
+
+# set default URI
+if [ -z "$LIBVIRT_DEFAULT_URI" ]; then
+    export LIBVIRT_DEFAULT_URI="qemu:///system"
+fi
+
+### MAIN ######################################################################
+
+# list all vm's
+VMS=$(virsh -q list --all --name) || error "Failed to list VMs"
+
+# iterate over vms
+for i in $VMS; do
+    VM_NAME="$i"
+    INFO="[$VM_NAME]"
+    WEB_PATH_WS="$WEB_ROOT/$VM_NAME"
+    WEB_PATH_WSS="$WEB_ROOT/wss.$VM_NAME"
+    XML_CFG=""
+    XML_CFG=$(virsh dumpxml "$i") || error "Failed to get VM XML config"
+    XML_SPICE=""
+    XML_SPICE=$(echo "$XML_CFG" |
+        xmlstarlet sel -t -c "domain/devices/graphics[@type='spice']") || true
+
+    if [ $ARG_UNINSTALL = "true" ]; then
+        debug "$INFO uninstalling spice-web-client"
+        kill_processes "websockify --daemon --cert=$SSL_CERT"
+        rm -rf "$WEB_PATH_WS" "$WEB_PATH_WSS"
+    elif [ -z "$XML_SPICE" ]; then
+        debug "$INFO skip, VM $i has no spice graphics device"
+    else
+        VM_PORT=$(get_xml "$XML_SPICE" "graphics/@port")
+        VM_HOST=$(get_xml "$XML_SPICE" "graphics/@listen")
+        VM_COMPRESSION=$(get_xml "$XML_SPICE" "graphics/image/@compression")
+        [ -n "$VM_PORT" ] || error "Failed to get VM port"
+        [ -n "$VM_HOST" ] || error "Failed to get VM host/IP"
+        [ -n "$VM_COMPRESSION" ] || error "Failed to get VM compression"
+
+        debug "$INFO HOST: $VM_HOST  PORT: $VM_PORT  COMP: $VM_COMPRESSION"
+        if [ -n "$VM_PORT" ] && [ "$VM_HOST" = "0.0.0.0" ]; then
+            # extra info
+            if [ "$VM_COMPRESSION" != "auto_glz" ]; then
+                echo "$INFO please use 'auto_glz' compression" >&2
+                echo "$INFO else the connection will be slow" >&2
+            fi
+
+            # HTTP + WS
+            install_client "$INFO" "$WEB_PATH_WS" "$VM_PORT" "$VM_NAME" \
+                "ws" || error "Failed to install $WEB_PATH_WS"
+
+            # HTTPS + WSS
+            if [ -f "$SSL_CERT" ] && [ -f "$SSL_KEY" ]; then
+                install_client "$INFO" "$WEB_PATH_WSS" "$VM_PORT" "$VM_NAME" \
+                    "wss" || error "Failed to install $WEB_PATH_WSS"
+            else
+                debug "$INFO skip SSL/WSS, certificate or key not found"
+            fi
+
+        # skip localhost
+        elif [ -n "$VM_PORT" ] && [ "$VM_HOST" = "127.0.0.1" ]; then
+            debug "$INFO skip, host is localhost, use virt-viewer instead"
+        # unknown host
+        else
+            error "$INFO Unknown host IP configuration: $VM_HOST"
+        fi
+    fi
+done

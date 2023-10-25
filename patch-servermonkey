@@ -1,0 +1,27 @@
+#!/bin/sh
+#info: This script will change the original code from
+# https://github.com/RangeForce/spice-web-client
+# in order to create a Debian package
+
+#apt-get install nginx -y
+
+error() {
+    echo "ERROR: $1" >&2
+    exit 1
+}
+
+replace() {
+    [ -f "$1" ] || error "File $1 not found"
+    sed -i "s@$2@$3@g" "$1" || error "Failed to replace $2 with $3 in $1"
+}
+
+replace run.js "getURLParameter('vmport') || " ""
+replace run.js "getURLParameter('vmhost') || " ""
+replace run.js "'protocol': 'wss'," "'protocol': 'ws',"
+replace run.js "'port': 443," "'port': 7200,"
+replace run.js "10.11.12.200" "0.0.0.0"
+replace run.js "\$(\"title\").*eyeOS\x27)" "\$(\"title\").text((document.location.hostname || 'unknown'))"
+replace network/socket.js "Could not open websocket.*console" \
+    "The Virtual Machine seems to be offline, try to refresh the page or check with your administrator"
+replace index.html "flexVDI WebPortal - powered by eyeOS" "loading..."
+replace index.html "</title>" "</title>\n        <link rel=\"icon\" type=\"image/x-icon\" href=\"favicon.ico\">"

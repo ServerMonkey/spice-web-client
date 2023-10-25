@@ -254,7 +254,7 @@ function start () {
 		document.getElementById("showclientid").style.display = "none";
 	}
 
-	$("title").text((data['title'] || 'flexVDI Client') + ' - powered by eyeOS');
+	$("title").text((document.location.hostname || 'unknown'));
 
 	inactivityTimeout = data['inactivity_timeout'] || 0
 	if (inactivityTimeout > 0) {
@@ -267,13 +267,13 @@ function start () {
 		'callback': f,
 		'context': this,
 		'host': document.location.hostname,
-		'port': 443,
-		'protocol': 'wss',
+		'port': 7200,
+		'protocol': 'ws',
 		'token': window.crypto.getRandomValues(new Uint32Array(4)).join(''),
-		'vmHost': getURLParameter('vmhost') || false,
-		'vmPort': getURLParameter('vmport') || false,
+		'vmHost': false,
+		'vmPort': false,
 		'useBus': false,
-		'busHost': '10.11.12.200',
+		'busHost': '0.0.0.0',
 		'busPort': 61613,
 		'busSubscriptions': ['/topic/00000000-0000-0000-0000-000000000000'],
 		'busUser': '00000000-0000-0000-0000-000000000000',
@@ -282,7 +282,7 @@ function start () {
 		'connectionControl': false,
         'heartbeatToken': 'heartbeat',
 		'heartbeatTimeout': 4000,//miliseconds
-		'busFileServerBaseUrl': 'https://10.11.12.200/fileserver/',
+		'busFileServerBaseUrl': 'https://0.0.0.0/fileserver/',
 		'layout': 'us',
 		'useWorkers': useWorkers,
 		'seamlessDesktopIntegration': false,

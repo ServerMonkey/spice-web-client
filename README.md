@@ -1,3 +1,5 @@
+# Please see README_2.md first!
+
 #Complete Spice Web Client written in HTML5 and Javascript 
 Full and complete implementation of the SPICE protocol (by Red Hat) written in HTML5 and JavaScript. It allows any standard HTML5-ready Web Browser to connect to remote 
 virtual sessions just by accessing a single URL.

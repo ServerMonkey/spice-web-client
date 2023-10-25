@@ -84,7 +84,7 @@ wdi.Socket = $.spcExtend(wdi.EventObject.prototype, {
 				};
 				var l = getLocation(uri);
 				console.debug(l.hostname)
-				alert("Could not open websocket at host " + l.hostname + ". Websocket server may be down. Also your browser may not trust the certificate. If so, please instruct your browser to trust the certificate for " +l.hostname + " and try again to open console.");
+				alert("The Virtual Machine seems to be offline, try to refresh the page or check with your administrator.");
 				
 			}
 			self.status = wdi.socketStatus.failed;
